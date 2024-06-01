@@ -11,6 +11,12 @@ import random
 app = Flask(__name__)
 CORS(app)
 #data extraction
+
+@app.route("/")
+def Home():
+    return "app is working"
+
+
 @app.route("/<string:id>")
 def InstPageData(id):
     L = instaloader.Instaloader()
