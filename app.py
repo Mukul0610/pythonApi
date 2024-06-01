@@ -85,7 +85,7 @@ def get_reel_views(reel_url):
     except Exception as e:
         return {"error": str(e)}
 
-@app.route("/views")  #http://127.0.0.1:5000/views?url=https://www.instagram.com/p/C5WHzUdJabz/
+@app.route("/views")  
 def reel_views():
     reel_url = request.args.get('url')
 
