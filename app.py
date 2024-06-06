@@ -11,11 +11,11 @@ import random
 app = Flask(__name__)
 CORS(app)
 #data extraction
-
 @app.route("/")
-def Home():
-    return "app is working"
-
+def Data():
+    return jsonify({
+        "username": "mukul"
+    })
 
 @app.route("/<string:id>")
 def InstPageData(id):
@@ -30,6 +30,8 @@ def InstPageData(id):
         L.login("reading4_u", "0610@Mrai")
     else:
         L.login("mukul_enterpreneur", "Mukul@123")
+    
+    
     profile = instaloader.Profile.from_username(L.context, id)
     total_views = 0
 
@@ -258,4 +260,4 @@ def post():
     return jsonify(result)
 
 if __name__=="__main__":
-    app.run(debug=True)
+    app.run(host='0.0.0.0',port=8080)
