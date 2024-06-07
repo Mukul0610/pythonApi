@@ -4,4 +4,3 @@ instaloader
 opencv-python-headless
 requests
 numpy
-gunicorn
