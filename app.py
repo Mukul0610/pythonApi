@@ -6,7 +6,6 @@ import os
 import requests
 import shutil
 import numpy as np
-import random
 
 app = Flask(__name__)
 CORS(app)
@@ -130,6 +129,7 @@ def reel_views():
     result = get_reel_views(reel_url)
     return jsonify(result)
 
+#--------------------------------------------------Reel Verification----------------------------------------------------
 def download_instagram_reel(reel_url, download_folder='reels'):
     L = login_instaloader()
     if not L:
@@ -140,18 +140,15 @@ def download_instagram_reel(reel_url, download_folder='reels'):
         post = instaloader.Post.from_shortcode(L.context, short_code)
 
         if post.is_video:
-            print(f"Downloading reel: {post.url}")
             if not os.path.exists(download_folder):
                 os.makedirs(download_folder)
             L.download_post(post, target=download_folder)
             for file_name in os.listdir(download_folder):
                 if file_name.endswith('.mp4'):
                     return os.path.join(download_folder, file_name)
-            print("Failed to find the downloaded video file.")
             return None
         else:
-            print("The provided URL is not a reel.")
-            return None
+            return {"error": "The provided URL is not a reel."}
     except instaloader.exceptions.ConnectionException as e:
         if 'checkpoint required' in str(e):
             return {"error": "Checkpoint required. Please complete the checkpoint in your browser and try again."}
@@ -161,22 +158,30 @@ def download_instagram_reel(reel_url, download_folder='reels'):
         return {"error": str(e)}
 
 def read_image_from_url(image_url):
-    response = requests.get(image_url)
-    if response.status_code == 200:
-        image_array = np.asarray(bytearray(response.content), dtype="uint8")
-        image = cv2.imdecode(image_array, cv2.IMREAD_GRAYSCALE)
-        return image
-    else:
-        print(f"Failed to read image from URL. Status code: {response.status_code}")
+    try:
+        response = requests.get(image_url)
+        if response.status_code == 200:
+            image_array = np.asarray(bytearray(response.content), dtype="uint8")
+            image = cv2.imdecode(image_array, cv2.IMREAD_GRAYSCALE)
+            return image
+        else:
+            return None
+    except Exception as e:
+        print(f"Error reading image from URL: {e}")
         return None
 
 def is_image_present_in_video(video_path, input_image, min_match_count=10):
     sift = cv2.SIFT_create()
     kp1, des1 = sift.detectAndCompute(input_image, None)
     cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        print(f"Failed to open video: {video_path}")
+        return False
+
     frame_rate = cap.get(cv2.CAP_PROP_FPS)
     duration = 10
     num_frames = int(frame_rate * duration)
+    
     for _ in range(num_frames):
         ret, frame = cap.read()
         if not ret:
@@ -185,19 +190,17 @@ def is_image_present_in_video(video_path, input_image, min_match_count=10):
         kp2, des2 = sift.detectAndCompute(frame_gray, None)
         bf = cv2.BFMatcher()
         matches = bf.knnMatch(des1, des2, k=2)
-        good_matches = []
-        for m, n in matches:
-            if m.distance < 0.75 * n.distance:
-                good_matches.append(m)
+        good_matches = [m for m, n in matches if m.distance < 0.75 * n.distance]
+        
         if len(good_matches) >= min_match_count:
             cap.release()
             return True
+            
     cap.release()
     return False
 
 def main(reel_url, image_url):
-    short_code = reel_url.split("/")[-2]
-    download_folder = short_code
+    download_folder = reel_url.split("/")[-2]
     if not os.path.exists(download_folder):
         os.makedirs(download_folder)
 
@@ -205,24 +208,25 @@ def main(reel_url, image_url):
         input_image = read_image_from_url(image_url)
         if input_image is not None:
             video_path = download_instagram_reel(reel_url, download_folder)
-            if video_path:
+            if video_path and isinstance(video_path, str) and os.path.exists(video_path):
                 result = is_image_present_in_video(video_path, input_image)
-                print("Image found in video" if result else "Image not found in video")
                 return result
             else:
-                print("Failed to download the reel or the URL is not a reel.")
+                return False
         else:
-            print("Failed to download the image from the URL.")
+            return False
     finally:
-        shutil.rmtree(download_folder)
-        print(f"Deleted the download folder: {download_folder}")
+        if os.path.exists(download_folder):
+            shutil.rmtree(download_folder)
 
 @app.route("/process")
-def post():
+def process_reel():
     reel_url = request.args.get('reel_url')
     input_image_path = request.args.get('input_image_path')
+
     if not reel_url or not input_image_path:
         return jsonify({"error": "Missing required parameters"}), 400
+
     result = main(reel_url, input_image_path)
     return jsonify(result)
 
