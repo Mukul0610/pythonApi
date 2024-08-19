@@ -56,53 +56,53 @@ def InstPageData(id):
     
     try:
         profile = instaloader.Profile.from_username(L.context, id)
-        # total_views = 0
-        # count = 0  # Initialize count here to avoid redundancy
-
-        # if profile.mediacount > 30:
-        #     for post in profile.get_posts():
-        #         if count >= 30:
-        #             break
-        #         if post.is_video:  # Check if the post is a video
-        #             try:
-        #                 total_views += post.video_view_count
-        #                 count += 1
-        #             except AttributeError:
-        #                 # Handle case where video_view_count is not available
-        #                 pass
-        # elif profile.mediacount == 0:
-        #     total_views = 0
-        # else:
-        #     for post in profile.get_posts():
-        #         if post.is_video:  # Check if the post is a video
-        #             try:
-        #                 total_views += post.video_view_count
-        #                 count += 1
-        #             except AttributeError:
-        #                 # Handle case where video_view_count is not available
-        #                 pass
-
-        # # Avoid division by zero
-        # average_views = (total_views // count) if count > 0 else 0
-
         total_views = 0
-        post_count = 0
+        count = 0  # Initialize count here to avoid redundancy
 
-        # Iterate through the posts of the profile
-        for post in profile.get_posts():
-            if post_count >= 30:
-                break
+        if profile.mediacount > 30:
+            for post in profile.get_posts():
+                if count >= 30:
+                    break
+                if post.is_video:  # Check if the post is a video
+                    try:
+                        total_views += post.video_view_count
+                        count += 1
+                    except AttributeError:
+                        # Handle case where video_view_count is not available
+                        pass
+        elif profile.mediacount == 0:
+            total_views = 0
+        else:
+            for post in profile.get_posts():
+                if post.is_video:  # Check if the post is a video
+                    try:
+                        total_views += post.video_view_count
+                        count += 1
+                    except AttributeError:
+                        # Handle case where video_view_count is not available
+                        pass
 
-            # Only consider posts with video content (which have views)
-            if post.is_video:
-                total_views += post.video_view_count
-                post_count += 1
+        # Avoid division by zero
+        average_views = (total_views // count) if count > 0 else 0
 
-            if post_count == 0:
-                total_views=0
+    #     total_views = 0
+    #     post_count = 0
 
-    # Calculate average views
-        average_views = total_views // post_count
+    #     # Iterate through the posts of the profile
+    #     for post in profile.get_posts():
+    #         if post_count >= 30:
+    #             break
+
+    #         # Only consider posts with video content (which have views)
+    #         if post.is_video:
+    #             total_views += post.video_view_count
+    #             post_count += 1
+
+    #         if post_count == 0:
+    #             total_views=0
+
+    # # Calculate average views
+    #     average_views = total_views // post_count
         
         return jsonify({
             "username": profile.username,
